@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Trainer App</title>
+<style>
+  /* ── Reset & Base ─────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --primary: #1F4E79;
+    --accent:  #2E86C1;
+    --bg:      #F0F4F8;
+    --card:    #FFFFFF;
+    --text:    #1a1a2e;
+    --muted:   #6c757d;
+    --radius:  12px;
+    --shadow:  0 4px 16px rgba(0,0,0,.10);
+    --cat-kraft:     #E74C3C;
+    --cat-kondition: #3498DB;
+    --cat-core:      #F39C12;
+    --cat-dehnung:   #9B59B6;
+    --cat-aufwaermen:#1ABC9C;
+    --cat-abkuehlen: #95A5A6;
+  }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* ── Header ───────────────────────────────────── */
+  header {
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: #fff; padding: 20px 24px; display: flex; align-items: center; gap: 14px;
+    position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 12px rgba(0,0,0,.2);
+  }
+  header .logo { font-size: 2rem; }
+  header h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: .5px; }
+  header p  { font-size: .82rem; opacity: .8; margin-top: 2px; }
+
+  /* ── Config Banner ───────────────────────────── */
+  #config-banner {
+    background: #fff3cd; border-left: 4px solid #ffc107;
+    padding: 14px 20px; font-size: .88rem; display: flex;
+    align-items: flex-start; gap: 12px; flex-wrap: wrap;
+  }
+  #config-banner strong { display: block; margin-bottom: 4px; }
+  #config-banner code {
+    background: #e9ecef; border-radius: 4px; padding: 2px 6px;
+    font-family: monospace; font-size: .85rem; word-break: break-all;
+  }
+  #config-banner input {
+    border: 1px solid #ced4da; border-radius: 6px; padding: 6px 10px;
+    font-size: .88rem; width: 380px; max-width: 100%;
+  }
+  #config-banner button {
+    background: var(--primary); color: #fff; border: none;
+    border-radius: 6px; padding: 7px 16px; cursor: pointer; font-size: .88rem;
+    white-space: nowrap;
+  }
+  #config-banner button:hover { background: var(--accent); }
+
+  /* ── Controls ─────────────────────────────────── */
+  .controls { padding: 18px 20px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .search-wrap { position: relative; flex: 1; min-width: 200px; }
+  .search-wrap input {
+    width: 100%; padding: 10px 16px 10px 40px;
+    border: 1.5px solid #d0d7de; border-radius: 999px;
+    font-size: .95rem; background: #fff; transition: border-color .2s;
+  }
+  .search-wrap input:focus { outline: none; border-color: var(--accent); }
+  .search-wrap .icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 1rem; color: var(--muted); }
+  select {
+    padding: 10px 14px; border: 1.5px solid #d0d7de; border-radius: 8px;
+    background: #fff; font-size: .92rem; cursor: pointer;
+  }
+  .refresh-btn {
+    padding: 10px 18px; background: var(--primary); color: #fff;
+    border: none; border-radius: 8px; cursor: pointer; font-size: .92rem;
+    display: flex; align-items: center; gap: 6px; transition: background .2s;
+  }
+  .refresh-btn:hover { background: var(--accent); }
+  .refresh-btn.loading { opacity: .7; pointer-events: none; }
+
+  /* ── Category Pills ───────────────────────────── */
+  .cat-bar { padding: 0 20px 14px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .cat-pill {
+    padding: 5px 14px; border-radius: 999px; font-size: .82rem; font-weight: 600;
+    cursor: pointer; border: 2px solid transparent; transition: all .2s;
+  }
+  .cat-pill.active { color: #fff; }
+  .cat-pill:not(.active) { background: #fff; color: var(--muted); border-color: #d0d7de; }
+
+  /* ── Grid ─────────────────────────────────────── */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; padding: 0 20px 30px; }
+
+  /* ── Card ─────────────────────────────────────── */
+  .card {
+    background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
+    overflow: hidden; display: flex; flex-direction: column;
+    transition: transform .2s, box-shadow .2s; cursor: pointer;
+  }
+  .card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,.14); }
+  .card-stripe { height: 5px; }
+  .card-body { padding: 16px; flex: 1; }
+  .card-meta { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+  .badge {
+    font-size: .72rem; font-weight: 700; padding: 3px 10px;
+    border-radius: 999px; color: #fff; white-space: nowrap;
+  }
+  .diff-badge {
+    font-size: .72rem; padding: 3px 9px; border-radius: 999px; font-weight: 600;
+    background: #f0f0f0; color: var(--muted);
+  }
+  .card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 5px; }
+  .card .muscle { font-size: .8rem; color: var(--muted); margin-bottom: 8px; }
+  .card .desc { font-size: .82rem; color: #444; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .card-footer { padding: 10px 16px; background: #f8f9fa; display: flex; gap: 10px; flex-wrap: wrap; border-top: 1px solid #eee; }
+  .stat { font-size: .78rem; color: var(--muted); display: flex; align-items: center; gap: 4px; }
+  .stat strong { color: var(--text); }
+
+  /* ── Modal ────────────────────────────────────── */
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .overlay.hidden { display: none; }
+  .modal {
+    background: #fff; border-radius: 16px; max-width: 560px; width: 100%;
+    max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.3);
+  }
+  .modal-header { padding: 22px 24px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; }
+  .modal-header h2 { font-size: 1.2rem; font-weight: 700; }
+  .close-btn { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: var(--muted); line-height: 1; }
+  .modal-body { padding: 20px 24px; }
+  .modal-body .row { display: flex; gap: 20px; margin-bottom: 12px; flex-wrap: wrap; }
+  .modal-body .info-block { flex: 1; min-width: 120px; }
+  .modal-body .info-block label { font-size: .75rem; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); display: block; margin-bottom: 3px; }
+  .modal-body .info-block span { font-size: .95rem; font-weight: 600; }
+  .modal-body h4 { font-size: .85rem; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); margin: 14px 0 5px; }
+  .modal-body p { font-size: .92rem; line-height: 1.6; }
+  .modal-body a { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; padding: 9px 18px; background: var(--primary); color: #fff; border-radius: 8px; text-decoration: none; font-size: .88rem; }
+  .modal-body a:hover { background: var(--accent); }
+
+  /* ── State messages ───────────────────────────── */
+  .state-msg { text-align: center; padding: 60px 20px; color: var(--muted); }
+  .state-msg .icon { font-size: 3rem; margin-bottom: 12px; }
+  .state-msg h3 { margin-bottom: 6px; }
+  .state-msg p { font-size: .9rem; }
+  .count-bar { padding: 0 20px 10px; font-size: .85rem; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🏋️</div>
+  <div>
+    <h1>Vereins Trainer App</h1>
+    <p>Übungsbibliothek</p>
+  </div>
+</header>
+
+<!-- ── Config Banner ── -->
+<div id="config-banner">
+  <div style="flex:1;min-width:260px;">
+    <strong>⚙️ Google Sheets Verbindung einrichten</strong>
+    Trage deine Google Sheets URL ein, um Übungen automatisch zu laden.<br>
+    <small style="color:#856404;">Anleitung: Google Sheet → Datei → Im Web veröffentlichen → CSV → URL kopieren</small>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px;">
+    <input type="text" id="sheets-url" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv" />
+    <button onclick="saveSheetUrl()">Speichern & Laden</button>
+  </div>
+</div>
+
+<!-- ── Controls ── -->
+<div class="controls">
+  <div class="search-wrap">
+    <span class="icon">🔍</span>
+    <input type="text" id="search" placeholder="Übung suchen…" oninput="render()" />
+  </div>
+  <select id="diff-filter" onchange="render()">
+    <option value="">Alle Stufen</option>
+    <option>Anfänger</option>
+    <option>Mittel</option>
+    <option>Fortgeschritten</option>
+  </select>
+  <button class="refresh-btn" id="refresh-btn" onclick="loadData()">↻ Aktualisieren</button>
+</div>
+
+<div class="cat-bar" id="cat-bar"></div>
+<div class="count-bar" id="count-bar"></div>
+<div class="grid" id="grid"></div>
+
+<!-- ── Modal ── -->
+<div class="overlay hidden" id="overlay" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <h2 id="modal-title"></h2>
+      <button class="close-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+// ── Config ──────────────────────────────────────────────────────────────────
+const STORAGE_KEY = 'trainerApp_sheetsUrl';
+const COLORS = {
+  'Kraft':      '#E74C3C',
+  'Kondition':  '#3498DB',
+  'Core':       '#F39C12',
+  'Dehnung':    '#9B59B6',
+  'Aufwärmen':  '#1ABC9C',
+  'Abkühlen':   '#95A5A6',
+  'default':    '#1F4E79',
+};
+
+// ── State ────────────────────────────────────────────────────────────────────
+let allExercises = [];
+let activeCategory = '';
+
+// ── Demo / Fallback Data ─────────────────────────────────────────────────────
+const DEMO = [
+  { id:1, name:'Kniebeuge',        cat:'Kraft',     muscle:'Beine',         diff:'Anfänger',    desc:'Grundübung für Bein- und Gesäßmuskulatur',  steps:'Füße schulterbreit, Rücken gerade, tief in die Hocke', sets:3, reps:12, duration:'',  video:'' },
+  { id:2, name:'Liegestütz',       cat:'Kraft',     muscle:'Brust / Arme',  diff:'Anfänger',    desc:'Klassische Körpergewichtsübung',             steps:'Körper gerade, Ellbogen nah führen',           sets:3, reps:15, duration:'',  video:'' },
+  { id:3, name:'Plank',            cat:'Core',      muscle:'Rumpf',         diff:'Anfänger',    desc:'Isometrische Rumpfstabilisierung',           steps:'Körper gerade wie ein Brett',                  sets:3, reps:'',  duration:60,  video:'' },
+  { id:4, name:'Klimmzug',         cat:'Kraft',     muscle:'Rücken / Arme', diff:'Fortgeschritten', desc:'Körpergewicht an Stange hochziehen',    steps:'Schulterblätter zusammen, kontrolliert',       sets:3, reps:8,  duration:'',  video:'' },
+  { id:5, name:'Burpee',           cat:'Kondition', muscle:'Ganzkörper',    diff:'Mittel',      desc:'Hochintensive Ganzkörperübung',              steps:'Liegestütz → Sprung → Landung',                sets:3, reps:10, duration:'',  video:'' },
+  { id:6, name:'Ausfallschritt',   cat:'Kraft',     muscle:'Beine',         diff:'Anfänger',    desc:'Einbeinige Kniebeugenvariante',              steps:'Großer Schritt, hinteres Knie fast zum Boden', sets:3, reps:10, duration:'',  video:'' },
+  { id:7, name:'Schulterdrücken',  cat:'Kraft',     muscle:'Schultern',     diff:'Mittel',      desc:'Überkopfdrücken für Schultern',              steps:'Hantel auf Schulter, Arme strecken',           sets:3, reps:10, duration:'',  video:'' },
+  { id:8, name:'Bergsteiger',      cat:'Core',      muscle:'Rumpf / Beine', diff:'Mittel',      desc:'Dynamische Core-Übung',                      steps:'Knie abwechselnd zur Brust in Stützposition',  sets:3, reps:'',  duration:30,  video:'' },
+  { id:9, name:'Seilspringen',     cat:'Kondition', muscle:'Ganzkörper',    diff:'Anfänger',    desc:'Ausdauer & Koordination',                    steps:'Rhythmisch springen, Arme locker',              sets:3, reps:'',  duration:60,  video:'' },
+  { id:10,name:'Kreuzheben',       cat:'Kraft',     muscle:'Rücken / Beine',diff:'Fortgeschritten', desc:'Hintere Kette: Oberschenkel & Rücken',  steps:'Hüfte zurück, Rücken gerade, Stange nah',      sets:3, reps:10, duration:'',  video:'' },
+];
+
+// ── Colour helper ─────────────────────────────────────────────────────────────
+function catColor(cat) { return COLORS[cat] || COLORS.default; }
+
+// ── Parse CSV from Google Sheets ──────────────────────────────────────────────
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim().toLowerCase());
+  const idx = k => headers.findIndex(h => h.includes(k));
+
+  const iName  = idx('name') >= 0 ? idx('name') : idx('übung');
+  const iCat   = idx('kategorie') >= 0 ? idx('kategorie') : idx('cat');
+  const iMuscle= idx('muskel');
+  const iDiff  = idx('schwierigkeit') >= 0 ? idx('schwierigkeit') : idx('diff');
+  const iDesc  = idx('beschreibung') >= 0 ? idx('beschreibung') : idx('desc');
+  const iSteps = idx('ausführung') >= 0 ? idx('ausführung') : idx('steps');
+  const iSets  = idx('sätze') >= 0 ? idx('sätze') : idx('sets');
+  const iReps  = idx('wiederholung');
+  const iDur   = idx('dauer');
+  const iVideo = idx('video');
+  const iActive= idx('aktiv');
+
+  return lines.slice(1).map((line, i) => {
+    const cols = line.match(/(".*?"|[^,]+|(?<=,)(?=,)|^(?=,)|(?<=,)$)/g) || [];
+    const g = n => n >= 0 ? (cols[n] || '').replace(/"/g, '').trim() : '';
+    if (iActive >= 0 && g(iActive).toLowerCase() === 'nein') return null;
+    return {
+      id:     i + 1,
+      name:   g(iName)   || 'Unbenannt',
+      cat:    g(iCat)    || 'Sonstiges',
+      muscle: g(iMuscle) || '',
+      diff:   g(iDiff)   || '',
+      desc:   g(iDesc)   || '',
+      steps:  g(iSteps)  || '',
+      sets:   g(iSets)   || '',
+      reps:   g(iReps)   || '',
+      duration: g(iDur)  || '',
+      video:  g(iVideo)  || '',
+    };
+  }).filter(Boolean);
+}
+
+// ── Load Data ─────────────────────────────────────────────────────────────────
+async function loadData() {
+  const btn = document.getElementById('refresh-btn');
+  btn.classList.add('loading');
+  btn.textContent = '⏳ Lädt…';
+
+  const url = localStorage.getItem(STORAGE_KEY);
+  if (!url) {
+    allExercises = DEMO;
+    showGrid();
+    btn.classList.remove('loading');
+    btn.innerHTML = '↻ Aktualisieren';
+    return;
+  }
+  try {
+    const proxy = `https://corsproxy.io/?url=${encodeURIComponent(url)}`;
+    const res   = await fetch(proxy);
+    if (!res.ok) throw new Error('Netzwerkfehler');
+    const text  = await res.text();
+    const parsed = parseCSV(text);
+    allExercises = parsed.length ? parsed : DEMO;
+  } catch(e) {
+    console.warn('Sheets-Fehler:', e);
+    allExercises = DEMO;
+  }
+  showGrid();
+  btn.classList.remove('loading');
+  btn.innerHTML = '↻ Aktualisieren';
+}
+
+// ── Category bar ──────────────────────────────────────────────────────────────
+function buildCatBar() {
+  const cats = ['', ...new Set(allExercises.map(e => e.cat))];
+  const bar  = document.getElementById('cat-bar');
+  bar.innerHTML = cats.map(cat => {
+    const label  = cat || 'Alle';
+    const color  = cat ? catColor(cat) : '#1F4E79';
+    const active = activeCategory === cat;
+    return `<button class="cat-pill${active ? ' active' : ''}"
+      style="${active ? `background:${color};border-color:${color}` : `border-color:${color};color:${color}`}"
+      onclick="setCat('${cat}')">${label}</button>`;
+  }).join('');
+}
+
+function setCat(cat) { activeCategory = cat; render(); }
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function render() {
+  const q    = document.getElementById('search').value.toLowerCase();
+  const diff = document.getElementById('diff-filter').value;
+  buildCatBar();
+
+  const filtered = allExercises.filter(e => {
+    if (activeCategory && e.cat !== activeCategory) return false;
+    if (diff && e.diff !== diff) return false;
+    if (q && !`${e.name} ${e.cat} ${e.muscle} ${e.desc}`.toLowerCase().includes(q)) return false;
+    return true;
+  });
+
+  document.getElementById('count-bar').textContent =
+    `${filtered.length} Übung${filtered.length !== 1 ? 'en' : ''} gefunden`;
+
+  const grid = document.getElementById('grid');
+  if (!filtered.length) {
+    grid.innerHTML = `<div class="state-msg" style="grid-column:1/-1">
+      <div class="icon">🔍</div><h3>Keine Übungen gefunden</h3>
+      <p>Versuche andere Suchbegriffe oder Filter.</p></div>`;
+    return;
+  }
+  grid.innerHTML = filtered.map(e => cardHTML(e)).join('');
+}
+
+function cardHTML(e) {
+  const color   = catColor(e.cat);
+  const statDur = e.duration ? `<span class="stat">⏱ <strong>${e.duration}s</strong></span>` : '';
+  const statReps= e.reps     ? `<span class="stat">🔁 <strong>${e.reps} Wdh</strong></span>` : '';
+  const statSets= e.sets     ? `<span class="stat">📋 <strong>${e.sets} Sätze</strong></span>` : '';
+  return `<div class="card" onclick="openModal(${e.id})">
+    <div class="card-stripe" style="background:${color}"></div>
+    <div class="card-body">
+      <div class="card-meta">
+        <span class="badge" style="background:${color}">${e.cat}</span>
+        ${e.diff ? `<span class="diff-badge">${e.diff}</span>` : ''}
+      </div>
+      <h3>${e.name}</h3>
+      ${e.muscle ? `<div class="muscle">💪 ${e.muscle}</div>` : ''}
+      <p class="desc">${e.desc}</p>
+    </div>
+    ${statSets || statReps || statDur ? `<div class="card-footer">${statSets}${statReps}${statDur}</div>` : ''}
+  </div>`;
+}
+
+// ── Modal ─────────────────────────────────────────────────────────────────────
+function openModal(id) {
+  const e = allExercises.find(x => x.id === id); if (!e) return;
+  const color = catColor(e.cat);
+  document.getElementById('modal-title').textContent = e.name;
+  document.getElementById('modal-body').innerHTML = `
+    <div class="row">
+      ${e.cat    ? `<div class="info-block"><label>Kategorie</label><span style="color:${color}">${e.cat}</span></div>` : ''}
+      ${e.muscle ? `<div class="info-block"><label>Muskelgruppe</label><span>${e.muscle}</span></div>` : ''}
+      ${e.diff   ? `<div class="info-block"><label>Schwierigkeit</label><span>${e.diff}</span></div>` : ''}
+    </div>
+    <div class="row">
+      ${e.sets     ? `<div class="info-block"><label>Sätze</label><span>${e.sets}</span></div>` : ''}
+      ${e.reps     ? `<div class="info-block"><label>Wiederholungen</label><span>${e.reps}</span></div>` : ''}
+      ${e.duration ? `<div class="info-block"><label>Dauer</label><span>${e.duration} Sek</span></div>` : ''}
+    </div>
+    ${e.desc  ? `<h4>Beschreibung</h4><p>${e.desc}</p>` : ''}
+    ${e.steps ? `<h4>Ausführung</h4><p>${e.steps}</p>` : ''}
+    ${e.video ? `<a href="${e.video}" target="_blank">▶ Video ansehen</a>` : ''}
+  `;
+  document.getElementById('overlay').classList.remove('hidden');
+}
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('overlay'))
+    document.getElementById('overlay').classList.add('hidden');
+}
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeModal(); });
+
+// ── Google Sheets URL ─────────────────────────────────────────────────────────
+function saveSheetUrl() {
+  const url = document.getElementById('sheets-url').value.trim();
+  if (url) { localStorage.setItem(STORAGE_KEY, url); loadData(); }
+}
+
+function showGrid() { render(); }
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+const saved = localStorage.getItem(STORAGE_KEY);
+if (saved) document.getElementById('sheets-url').value = saved;
+loadData();
+</script>
+</body>
+</html>
